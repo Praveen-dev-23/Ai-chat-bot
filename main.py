@@ -31,6 +31,14 @@ def save_score(score, filepath="rl_score.txt"):
     except Exception as e:
         print(f"\n{COLOR_RED}Error saving score to {filepath}: {e}{COLOR_RESET}")
 
+def print_ai_box(text):
+    """Prints the AI response inside a clean Unicode container box."""
+    lines = text.strip().split("\n")
+    print(f"\n{COLOR_CYAN}┌── AI RESPONSE ───────────────────────────────────────────────────{COLOR_RESET}")
+    for line in lines:
+        print(f"{COLOR_CYAN}│{COLOR_RESET}  {line}")
+    print(f"{COLOR_CYAN}└──────────────────────────────────────────────────────────────────{COLOR_RESET}")
+
 def main():
     # Load environment variables
     load_dotenv()
@@ -67,24 +75,24 @@ def main():
         print(f"\nInitialization Error: Failed to initialize Gemini Client.\nDetails: {e}\n")
         sys.exit(1)
         
-    print("=" * 60)
+    print(f"{COLOR_CYAN}{'=' * 67}{COLOR_RESET}")
     print(f"Gemini Terminal Chatbot Started (Model: {model_name})")
-    print(f"Current RL Satisfaction Score: {COLOR_BOLD}{COLOR_GREEN}{score}{COLOR_RESET}")
+    print(f"Current Satisfaction Score: {COLOR_BOLD}{COLOR_GREEN}{score}{COLOR_RESET}")
+    print(f"{COLOR_CYAN}{'-' * 67}{COLOR_RESET}")
     print("Commands:")
-    print("  Type 'exit' or 'quit' to exit.")
+    print("  Type 'exit' or 'quit' to quit.")
     print("  Type '/score' to check current score.")
     print("  Type '/reset' to reset score to 1.")
-    print("=" * 60)
-    print()
+    print(f"{COLOR_CYAN}{'=' * 67}{COLOR_RESET}\n")
     
     while True:
         try:
             # Prompt user for input
-            user_input = input(f"{COLOR_BOLD}You:{COLOR_RESET} ").strip()
+            user_input = input(f"{COLOR_BOLD}You ➔{COLOR_RESET} ").strip()
             
             # Allow clean exit
             if user_input.lower() in ("exit", "quit"):
-                print("\nExiting chatbot. Goodbye!")
+                print(f"\n{COLOR_YELLOW}Exiting chatbot. Goodbye!{COLOR_RESET}")
                 break
                 
             # Ignore empty inputs
@@ -102,45 +110,50 @@ def main():
                 print(f"\n{COLOR_YELLOW}Satisfaction Score reset to 1.{COLOR_RESET}\n")
                 continue
                 
-            print("AI is thinking...", end="\r", flush=True)
+            print(f"{COLOR_YELLOW}AI is thinking...{COLOR_RESET}", end="\r", flush=True)
             
             # Generate response from Gemini
             response = chat.send_message(user_input)
             
             # Clear the thinking indicator
-            print(" " * 20, end="\r", flush=True)
+            print(" " * 30, end="\r", flush=True)
             
-            # Print response cleanly
-            print(f"{COLOR_BOLD}AI:{COLOR_RESET} {response.text}")
-            print()
+            # Print response inside the stylized box
+            print_ai_box(response.text)
             
             # Prompt user for feedback (Reinforcement Learning loop)
-            feedback = input(
-                f"Did this answer satisfy you? "
-                f"[{COLOR_GREEN}g{COLOR_RESET}]ood (+1) / [{COLOR_RED}b{COLOR_RESET}]ad (-1) / [{COLOR_YELLOW}s{COLOR_RESET}]kip: "
-            ).strip().lower()
+            print(f"\n{COLOR_BOLD}Did this answer satisfy you?{COLOR_RESET}")
+            print(f"  [{COLOR_GREEN}g{COLOR_RESET}]ood (+1 point)   [{COLOR_RED}b{COLOR_RESET}]ad (-1 point)   [{COLOR_YELLOW}s{COLOR_RESET}]kip (0 points)")
+            print()
+            feedback = input(f"Your Feedback [g/b/s] ➔ ").strip().lower()
+            print()
             
             if feedback in ("g", "good", "y", "yes"):
                 score += 1
                 save_score(score, score_file)
-                print(f"{COLOR_GREEN}✔ Satisfied! +1 Point.{COLOR_RESET} Current Score: {COLOR_BOLD}{score}{COLOR_RESET}\n")
+                print(f"{COLOR_GREEN}✔ Satisfied! (+1 point){COLOR_RESET}")
+                print(f"Current Satisfaction Score: {COLOR_BOLD}{score}{COLOR_RESET}")
             elif feedback in ("b", "bad", "n", "no"):
                 score -= 1
                 save_score(score, score_file)
-                print(f"{COLOR_RED}✘ Not Satisfied. -1 Point.{COLOR_RESET} Current Score: {COLOR_BOLD}{score}{COLOR_RESET}\n")
+                print(f"{COLOR_RED}✘ Not Satisfied. (-1 point){COLOR_RESET}")
+                print(f"Current Satisfaction Score: {COLOR_BOLD}{score}{COLOR_RESET}")
             else:
-                print(f"{COLOR_YELLOW}Skipped.{COLOR_RESET} Current Score: {COLOR_BOLD}{score}{COLOR_RESET}\n")
+                print(f"{COLOR_YELLOW}Skipped.{COLOR_RESET}")
+                print(f"Current Satisfaction Score: {COLOR_BOLD}{score}{COLOR_RESET}")
+                
+            print(f"\n{COLOR_CYAN}{'=' * 67}{COLOR_RESET}\n")
                 
         except KeyboardInterrupt:
             # Handle Ctrl+C gracefully
-            print("\n\nExiting chatbot. Goodbye!")
+            print(f"\n\n{COLOR_YELLOW}Exiting chatbot. Goodbye!{COLOR_RESET}")
             break
         except APIError as e:
-            print(" " * 20, end="\r", flush=True)  # Clear the thinking indicator
+            print(" " * 30, end="\r", flush=True)  # Clear the thinking indicator
             print(f"\nGemini API Error: {e.message} (Status: {e.code})")
             print("Please verify your API key, network connection, or model configuration.\n")
         except Exception as e:
-            print(" " * 20, end="\r", flush=True)  # Clear the thinking indicator
+            print(" " * 30, end="\r", flush=True)  # Clear the thinking indicator
             print(f"\nAn unexpected error occurred: {e}\n")
 
 if __name__ == "__main__":
